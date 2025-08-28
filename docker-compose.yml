@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Definition for our PostgreSQL database service
+  postgres-db:
+    image: timescale/timescaledb:latest-pg17 
+    container_name: urban-sensor-db
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: sensor_data_db
+    ports:
+      - "5432:5432"              # Maps your local machine's port 5432 to the container's port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/  # Critical: This volume persists your data
+      - ./sql_scripts/init.sql:/docker-entrypoint-initdb.d/init.sql # Runs this script on first startup
+    restart: unless-stopped         # Auto-restarts the container if it fails
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d sensor_data_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  data-ingestion:
+    build: ./ingestion_app
+    container_name: urban-data-ingestion
+    environment:
+      POSTGRES_HOST: postgres-db
+      POSTGRES_DB: sensor_data_db
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_PORT: 5432
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    volumes:
+      - ./ingestion_app/data:/app/data
+    restart: "no"
+# Declares the named volume that Docker will manage.
+# The data will be stored on local machine, but managed by Docker.
+volumes:
+  postgres_data:
