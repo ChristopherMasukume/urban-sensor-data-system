@@ -10,6 +10,9 @@ A Dockerized data engineering pipeline for ingesting and storing smart home sens
 - **Batch processing** for large datasets (14M+ records)
 - **Error handling** and automatic retries
 
+  Access data from https://drive.google.com/file/d/1NRn3ws4bHYOUwufW-zi6Bz6KW_zuk61-/view?usp=sharing
+  
+
 ## 📁 Project Structure
 
 urban-sensor-data-system/
