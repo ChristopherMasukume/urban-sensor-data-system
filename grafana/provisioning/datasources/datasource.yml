@@ -1,0 +1,13 @@
+apiVersion: 1
+datasources:
+  - name: Postgres
+    type: postgres
+    access: proxy
+    url: postgres-db:5432
+    user: admin_user
+    secureJsonData:
+      password: secure_password
+    database: sensor_data_db
+    isDefault: true
+    jsonData:
+      sslmode: "disable"

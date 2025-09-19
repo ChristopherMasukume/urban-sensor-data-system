@@ -102,6 +102,45 @@ def ingest_data(conn, df):
             print(f"❌ Error inserting data: {e}")
             raise
 
+def run_etl(conn):
+    """Extract, transform, and load data into a clean table"""
+    try:
+        cur = conn.cursor()
+        print("🔎 Extracting raw data from sensor_readings...")
+        cur.execute("SELECT * FROM sensor_readings;")
+        rows = cur.fetchall()
+
+        print(f"📥 Extracted {len(rows)} rows. Transforming...")
+        transformed = []
+        for r in rows:
+            timestamp, sensor_id, metric_name, metric_value = r
+            metric_name = metric_name.strip().lower() if metric_name else None
+            transformed.append((timestamp, sensor_id, metric_name, float(metric_value) if metric_value else None))
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS clean_sensor_data (
+            time TIMESTAMPTZ,
+            sensor_id TEXT,
+            metric_name TEXT,
+            metric_value DOUBLE PRECISION
+        );
+        """)
+
+        cur.execute("TRUNCATE clean_sensor_data;")  # optional: reset clean table
+        cur.executemany("""
+            INSERT INTO clean_sensor_data (time, sensor_id, metric_name, metric_value)
+            VALUES (%s, %s, %s, %s)
+        """, transformed)
+
+        conn.commit()
+        cur.close()
+        print("✅ ETL process completed successfully. Clean data is ready!")
+
+    except Exception as e:
+        print(f"❌ ETL failed: {e}")
+        conn.rollback()
+
+
 def main():
     """Main function to run the data ingestion pipeline"""
     try:
@@ -123,6 +162,7 @@ def main():
         transformed_df = transform_data(df)
         conn = create_connection(db_config)
         ingest_data(conn, transformed_df)
+        run_etl(conn)
         conn.close()
         print("🎉 Data ingestion completed successfully!")
         

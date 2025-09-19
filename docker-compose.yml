@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Definition for our PostgreSQL database service
+  # Definition for PostgreSQL database service
   postgres-db:
     image: timescale/timescaledb:latest-pg17 
     container_name: urban-sensor-db
@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: secure_password
       POSTGRES_DB: sensor_data_db
     ports:
-      - "5432:5432"              # Maps your local machine's port 5432 to the container's port 5432
+      - "5432:5432"              # Maps the local machine's port 5432 to the container's port 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data/  # Critical: This volume persists your data
       - ./sql_scripts/init.sql:/docker-entrypoint-initdb.d/init.sql # Runs this script on first startup
@@ -20,6 +20,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3030:3000" # Grafana will be available at http://localhostadmin:3030 (admin-@homedipo1)
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - postgres-db
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
 
   data-ingestion:
     build: ./ingestion_app
@@ -40,3 +54,4 @@ services:
 # The data will be stored on local machine, but managed by Docker.
 volumes:
   postgres_data:
+  grafana_data:
